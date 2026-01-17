@@ -24,15 +24,17 @@ The type system uses the following annotations to express ownership semantics:
 
 ## Build & Run
 
+Always use the mvn wrapper `mvnw`
+
 ```bash
 # Compile
-mvn compile
+./mvnw compile
 
 # Run tests
-mvn test
+./mvnw test
 
 # Package
-mvn package
+./mvnw package
 ```
 
 ## Project Structure
@@ -45,6 +47,10 @@ src/
 │   └── ...
 └── test/java/            # Test cases for the type checker
 ```
+
+## Folders to ignore
+
+ - `plans` - Old claude code plans that are not relevant anymore.
 
 ## Checker Framework Integration
 
@@ -60,6 +66,10 @@ This project uses the [Checker Framework](https://checkerframework.org/) to impl
 2. When the owner goes out of scope, the value is dropped
 3. You can have either one mutable borrow OR any number of immutable borrows (not both)
 4. Borrows must not outlive the owner
+
+## Rust features that are out of scope 
+
+1. unsafe blocks
 
 ## Dependencies
 
