@@ -3,6 +3,7 @@ package name.mateusborges.checker;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import javax.lang.model.element.Element;
@@ -249,6 +250,54 @@ public class HemileiaStore extends CFAbstractStore<HemileiaValue, HemileiaStore>
         // Same semantics as leastUpperBound for ownership tracking
         result.movedVariables.addAll(this.movedVariables);
         result.movedVariables.addAll(previous.movedVariables);
+        return result;
+    }
+
+    @Override
+    protected boolean supersetOf(CFAbstractStore<HemileiaValue, HemileiaStore> other) {
+        if (!super.supersetOf(other)) {
+            return false;
+        }
+
+        if (!(other instanceof HemileiaStore otherHemileia)) {
+            return false;
+        }
+
+        // A superset must contain all moved variables from the other store
+        if (!this.movedVariables.containsAll(otherHemileia.movedVariables)) {
+            return false;
+        }
+
+        // Check borrow relationships
+        for (Map.Entry<Element, Set<Element>> entry : otherHemileia.activeBorrows.entrySet()) {
+            Set<Element> thisBorrows = this.activeBorrows.get(entry.getKey());
+            if (thisBorrows == null || !thisBorrows.containsAll(entry.getValue())) {
+                return false;
+            }
+        }
+
+        for (Map.Entry<Element, Element> entry : otherHemileia.borrowSources.entrySet()) {
+            if (!Objects.equals(this.borrowSources.get(entry.getKey()), entry.getValue())) {
+                return false;
+            }
+        }
+
+        for (Map.Entry<Element, Boolean> entry : otherHemileia.mutableBorrows.entrySet()) {
+            if (!Objects.equals(this.mutableBorrows.get(entry.getKey()), entry.getValue())) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + movedVariables.hashCode();
+        result = 31 * result + activeBorrows.hashCode();
+        result = 31 * result + borrowSources.hashCode();
+        result = 31 * result + mutableBorrows.hashCode();
         return result;
     }
 

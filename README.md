@@ -49,4 +49,30 @@ to:
 <logger name="name.mateusborges.checker" level="DEBUG" />
 ```
 
-Available log levels (from most to least verbose): `TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`    
+Available log levels (from most to least verbose): `TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`
+
+## Why do I need to override `supersetOf()` in custom stores?
+
+When your store tracks custom state beyond the standard VALUE map (like `movedVariables` or `activeBorrows`), you **must** override `supersetOf()` to include those fields in the comparison.
+
+The Checker Framework's dataflow analysis uses `supersetOf()` (via `equals()`) to detect when fixpoint is reached during loop analysis. Without the override:
+
+1. First loop iteration: Your transfer function updates custom fields (e.g., marks variables as moved)
+2. At the loop back-edge: The framework compares stores to check for fixpoint
+3. **Bug**: Parent's `supersetOf()` only compares VALUE maps, not your custom fields
+4. VALUE maps may be equal even though custom fields differ → premature fixpoint declared
+5. Analysis stops before propagating your custom state through subsequent iterations
+
+**Symptom**: Errors like use-after-move not detected inside loops, even though they're detected in straight-line code.
+
+**Fix**: Override `supersetOf()` to include all custom fields:
+
+```java
+@Override
+protected boolean supersetOf(CFAbstractStore<V, S> other) {
+    if (!super.supersetOf(other)) return false;
+    if (!(other instanceof MyStore o)) return false;
+    return this.movedVariables.containsAll(o.movedVariables);
+    // ... and other custom fields
+}
+```

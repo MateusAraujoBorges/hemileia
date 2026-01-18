@@ -151,4 +151,86 @@ public class SanityTests {
         // :: error: (use.after.move)
         System.out.println(bar(v1) + ", " + bar(v1) + v2);
     }
+
+    /**
+     * fn foo(v1: Vec<i32>, v2: Vec<i32>) -> (Vec<i32>, Vec<i32>, i32) {
+     *     // do stuff with v1 and v2
+     *     println!("{:?}, {:?}", v1, v2);
+     *     // hand back ownership, and the result of our function
+     *     (v1, v2, 42)
+     * }
+     *
+     * fn main() {
+     *     let mut v1 = vec![1, 2, 3];
+     *     let mut v2 = vec![1, 2, 3];
+     *     let mut answer = 11;
+     *
+     *     let mut i = 0;
+     *     while i < v1.len() {
+     *         let (v1k, v2k, answerk) = foo(v1, v2);
+     *         v1 = v1k;
+     *         v2 = v2k;
+     *         answer = answerk;
+     *         println!("{:?}, {:?}, {answer}", v1, v2);
+     *         i = i + 1;
+     *     }
+     *     println!("{:?}, {:?}, {answer}", v1, v2);
+     * }
+     */
+
+    void ownershipTransferAndReturnWithLoops() {
+        @Owned StringBuilder v1 = new StringBuilder("1, 2, 3");
+        @Owned StringBuilder v2 = new StringBuilder("1, 2, 3");
+        int i = 0;
+
+        while (i < v1.length()) {
+            if (v1.length() != v2.length()) {
+                @Owned FooResult result = foo(v1, v2);
+                v1 = result.v1();
+                v2 = result.v2();
+            }
+            System.out.println(v1 + ", " + v2.toString());
+            i++;
+        }
+        System.out.println(v1 + ", " + v2.toString());
+    }
+
+    /**
+     * fn foo(v1: Vec<i32>, v2: Vec<i32>) -> (Vec<i32>, Vec<i32>, i32) {
+     *     // do stuff with v1 and v2
+     *     println!("{:?}, {:?}", v1, v2);
+     *     // hand back ownership, and the result of our function
+     *     (v1, v2, 42)
+     * }
+     *
+     * fn main() {
+     *     let mut v1 = vec![1, 2, 3];
+     *     let mut v2 = vec![1, 2, 3];
+     *     let mut answer = 11;
+     *
+     *     let mut i = 0;
+     *     while i < v1.len() {
+     *         let (v1k, v2k, answerk) = foo(v1, v2);
+     *         answer = answerk;
+     *         println!("{:?}, {:?}, {answer}", v1, v2);
+     *         i = i + 1;
+     *     }
+     * }
+     */
+
+    void reusingMovedValuesWithoutReOwningThemIsAnError() {
+        @Owned StringBuilder v1 = new StringBuilder("1, 2, 3");
+        @Owned StringBuilder v2 = new StringBuilder("1, 2, 3");
+        int i = 0;
+
+        // :: error: (use.after.move)
+        while (i < v1.length()) {
+            // :: error: (use.after.move)
+            @Owned FooResult result = foo(v1, v2);
+
+            // :: error: (use.after.move)
+            System.out.println(v1 + ", " + v2.toString());
+            i++;
+        }
+    }
 }

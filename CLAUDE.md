@@ -121,3 +121,33 @@ if (result.containsTwoStores()) {
 Modifying only `getRegularStore()` on a `ConditionalTransferResult` will NOT propagate changes to the normal flow path.
 
 Reference: [NullnessTransfer.java](https://github.com/typetools/checker-framework/blob/master/checker/src/main/java/org/checkerframework/checker/nullness/NullnessTransfer.java)
+
+### Custom Store State and Fixpoint Detection
+
+When extending `CFAbstractStore` with custom fields (like `movedVariables`, `activeBorrows`), you **must** override `supersetOf()` to include those fields in the comparison. The Checker Framework uses `supersetOf()` (via `equals()`) for fixpoint detection during loop analysis.
+
+**Why this matters**: Without overriding `supersetOf()`, the dataflow analysis only compares the VALUE maps (type refinements). If your custom fields change but VALUE maps are equal, the analysis will prematurely declare fixpoint and stop iterating—causing bugs like use-after-move not being detected in loops.
+
+**Required pattern** in custom store classes:
+
+```java
+@Override
+protected boolean supersetOf(CFAbstractStore<V, S> other) {
+    if (!super.supersetOf(other)) {
+        return false;
+    }
+    if (!(other instanceof MyStore otherStore)) {
+        return false;
+    }
+    // Include ALL custom fields in comparison
+    if (!this.customSet.containsAll(otherStore.customSet)) {
+        return false;
+    }
+    // ... check other custom fields
+    return true;
+}
+```
+
+Also override `hashCode()` for consistency.
+
+Reference: [NullnessStore.java](https://github.com/typetools/checker-framework/blob/master/checker/src/main/java/org/checkerframework/checker/nullness/NullnessStore.java)
