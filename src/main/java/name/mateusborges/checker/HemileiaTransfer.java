@@ -14,6 +14,8 @@ import org.checkerframework.dataflow.expression.LocalVariable;
 import org.checkerframework.framework.flow.CFAbstractTransfer;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.checkerframework.javacutil.AnnotationMirrorSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Transfer function for the Hemileia ownership type system.
@@ -30,6 +32,8 @@ import org.checkerframework.javacutil.AnnotationMirrorSet;
  */
 public class HemileiaTransfer
         extends CFAbstractTransfer<HemileiaValue, HemileiaStore, HemileiaTransfer> {
+
+    private static final Logger logger = LoggerFactory.getLogger(HemileiaTransfer.class);
 
     private final HemileiaAnnotatedTypeFactory atypeFactory;
 
@@ -108,6 +112,8 @@ public class HemileiaTransfer
         var parameters = methodElement.getParameters();
         var arguments = node.getArguments();
 
+        logger.debug("visitMethodInvocation: {} with {} args", methodElement.getSimpleName(), arguments.size());
+
         for (int i = 0; i < arguments.size() && i < parameters.size(); i++) {
             Node arg = arguments.get(i);
 
@@ -115,13 +121,21 @@ public class HemileiaTransfer
             AnnotatedTypeMirror paramType = atypeFactory.getAnnotatedType(parameters.get(i));
             boolean paramIsOwned = atypeFactory.hasOwned(paramType);
 
+            logger.debug("  arg[{}]: {} = {}, paramIsOwned={}", i, arg.getClass().getSimpleName(), arg, paramIsOwned);
+
             if (paramIsOwned && arg instanceof LocalVariableNode argVar) {
                 Element argElement = argVar.getElement();
                 AnnotatedTypeMirror argType = atypeFactory.getAnnotatedType(argVar.getTree());
 
+                logger.debug("    argType={}, hasOwned={}", argType, atypeFactory.hasOwned(argType));
+
                 if (atypeFactory.hasOwned(argType)) {
                     // Ownership is transferred to the method
                     store.markMoved(argElement);
+                    logger.debug("    MARKED MOVED: {}", argElement.getSimpleName());
+                    logger.debug("    store.isMoved({})={}", argElement.getSimpleName(), store.isMoved(argElement));
+                    logger.debug("    store.getMovedVariables()={}", store.getMovedVariables());
+                    logger.debug("    result type={}", result.getClass().getSimpleName());
 
                     // Update the argument's type to @Moved in the store
                     AnnotationMirror movedAnno = atypeFactory.getMovedAnnotation();

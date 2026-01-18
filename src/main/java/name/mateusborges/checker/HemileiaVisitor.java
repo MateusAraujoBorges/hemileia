@@ -1,12 +1,12 @@
 package name.mateusborges.checker;
 
-import java.util.Set;
-
 import javax.lang.model.element.Element;
 
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
 import org.checkerframework.framework.type.AnnotatedTypeMirror;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.sun.source.tree.AssignmentTree;
 import com.sun.source.tree.ExpressionTree;
@@ -27,6 +27,8 @@ import com.sun.source.tree.VariableTree;
  * </ul>
  */
 public class HemileiaVisitor extends BaseTypeVisitor<HemileiaAnnotatedTypeFactory> {
+
+    private static final Logger logger = LoggerFactory.getLogger(HemileiaVisitor.class);
 
     /** Error message for using a moved value */
     private static final String USE_AFTER_MOVE = "use.after.move";
@@ -85,15 +87,28 @@ public class HemileiaVisitor extends BaseTypeVisitor<HemileiaAnnotatedTypeFactor
             return;
         }
 
+        if (logger.isDebugEnabled()) {
+            long position = com.sun.source.util.Trees.instance(checker.getProcessingEnvironment())
+                .getSourcePositions()
+                .getStartPosition(atypeFactory.getPath(tree).getCompilationUnit(), tree);
+            logger.debug("checkUseAfterMove: {} at position {}", element.getSimpleName(), position);
+        }
+
         // Get the store at this program point
         HemileiaStore store = atypeFactory.getStoreBefore(tree);
+        logger.debug("  store={}, isMoved={}",
+            store != null ? "present" : "null",
+            store != null ? store.isMoved(element) : "N/A");
         if (store != null && store.isMoved(element)) {
+            logger.debug("  REPORTING ERROR via store.isMoved");
             checker.reportError(tree, USE_AFTER_MOVE, element.getSimpleName());
         }
 
         // Also check if the type has @Moved annotation (from dataflow)
         AnnotatedTypeMirror type = atypeFactory.getAnnotatedType(tree);
+        logger.debug("  type={}, hasMoved={}", type, atypeFactory.hasMoved(type));
         if (atypeFactory.hasMoved(type)) {
+            logger.debug("  REPORTING ERROR via hasMoved");
             checker.reportError(tree, USE_AFTER_MOVE, element.getSimpleName());
         }
     }

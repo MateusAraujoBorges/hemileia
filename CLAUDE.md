@@ -67,7 +67,7 @@ This project uses the [Checker Framework](https://checkerframework.org/) to impl
 3. You can have either one mutable borrow OR any number of immutable borrows (not both)
 4. Borrows must not outlive the owner
 
-## Rust features that are out of scope 
+## Rust features that are out of scope
 
 1. unsafe blocks
 
@@ -75,4 +75,49 @@ This project uses the [Checker Framework](https://checkerframework.org/) to impl
 
 - Java 25
 - Maven
-- Checker Framework 
+- Checker Framework
+- SLF4J with Logback
+
+## Logging
+
+The project uses SLF4J with Logback for logging. Configuration is in `src/main/resources/logback.xml`.
+
+### Adjusting Log Levels
+
+To enable debug logging for the Hemileia checker, edit `src/main/resources/logback.xml` and change:
+
+```xml
+<logger name="name.mateusborges.checker" level="WARN" />
+```
+
+to:
+
+```xml
+<logger name="name.mateusborges.checker" level="DEBUG" />
+```
+
+Available log levels (from most to least verbose): `TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`
+
+## Checker Framework Technical Notes
+
+### TransferResult Types
+
+When implementing transfer functions in `HemileiaTransfer.java`, be aware that `visit*` methods can return different `TransferResult` types:
+
+- **`RegularTransferResult`**: Single store for normal flow. Use `getRegularStore()`.
+- **`ConditionalTransferResult`**: Two stores (then/else) for conditional flow. Method invocations return this type because they can throw exceptions.
+
+**Critical Pattern**: When modifying stores in a transfer function, always handle both types:
+
+```java
+if (result.containsTwoStores()) {
+    modifyStore(result.getThenStore());
+    modifyStore(result.getElseStore());
+} else {
+    modifyStore(result.getRegularStore());
+}
+```
+
+Modifying only `getRegularStore()` on a `ConditionalTransferResult` will NOT propagate changes to the normal flow path.
+
+Reference: [NullnessTransfer.java](https://github.com/typetools/checker-framework/blob/master/checker/src/main/java/org/checkerframework/checker/nullness/NullnessTransfer.java)

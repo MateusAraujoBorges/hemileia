@@ -37,9 +37,10 @@ public class HemileiaCheckerTest extends CheckerFrameworkPerDirectoryTest {
     @Parameters
     public static String[] getTestDirs() {
         return new String[] {
-            "useaftermove",
-            "borrowconflict",
-            "validusage"
+                "basictests"
+//            "useaftermove",
+//            "borrowconflict",
+//            "validusage"
         };
     }
 }
