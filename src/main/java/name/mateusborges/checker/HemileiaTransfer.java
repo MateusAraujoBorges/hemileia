@@ -105,7 +105,6 @@ public class HemileiaTransfer
             MethodInvocationNode node, TransferInput<HemileiaValue, HemileiaStore> input) {
 
         TransferResult<HemileiaValue, HemileiaStore> result = super.visitMethodInvocation(node, input);
-        HemileiaStore store = result.getRegularStore();
 
         // Check each argument for ownership transfer
         var methodElement = node.getTarget().getMethod();
@@ -130,24 +129,45 @@ public class HemileiaTransfer
                 logger.debug("    argType={}, hasOwned={}", argType, atypeFactory.hasOwned(argType));
 
                 if (atypeFactory.hasOwned(argType)) {
-                    // Ownership is transferred to the method
-                    store.markMoved(argElement);
-                    logger.debug("    MARKED MOVED: {}", argElement.getSimpleName());
-                    logger.debug("    store.isMoved({})={}", argElement.getSimpleName(), store.isMoved(argElement));
-                    logger.debug("    store.getMovedVariables()={}", store.getMovedVariables());
                     logger.debug("    result type={}", result.getClass().getSimpleName());
 
-                    // Update the argument's type to @Moved in the store
-                    AnnotationMirror movedAnno = atypeFactory.getMovedAnnotation();
-                    HemileiaValue movedValue = analysis.createAbstractValue(
-                            new AnnotationMirrorSet(movedAnno),
-                            argType.getUnderlyingType());
-                    JavaExpression argExpr = new LocalVariable(argVar);
-                    store.replaceValue(argExpr, movedValue);
+                    // Handle both ConditionalTransferResult and RegularTransferResult
+                    // Method invocations return ConditionalTransferResult because they can throw.
+                    // We must modify both then/else stores for changes to propagate.
+                    if (result.containsTwoStores()) {
+                        markMovedInStore(result.getThenStore(), argElement, argVar, argType);
+                        markMovedInStore(result.getElseStore(), argElement, argVar, argType);
+                    } else {
+                        markMovedInStore(result.getRegularStore(), argElement, argVar, argType);
+                    }
                 }
             }
         }
 
         return result;
+    }
+
+    /**
+     * Marks a variable as moved in the given store.
+     *
+     * @param store the store to update
+     * @param element the element being moved
+     * @param varNode the local variable node being moved
+     * @param varType the annotated type of the variable
+     */
+    private void markMovedInStore(HemileiaStore store, Element element,
+            LocalVariableNode varNode, AnnotatedTypeMirror varType) {
+        store.markMoved(element);
+        logger.debug("    MARKED MOVED: {}", element.getSimpleName());
+        logger.debug("    store.isMoved({})={}", element.getSimpleName(), store.isMoved(element));
+        logger.debug("    store.getMovedVariables()={}", store.getMovedVariables());
+
+        // Update the variable's type to @Moved in the store
+        AnnotationMirror movedAnno = atypeFactory.getMovedAnnotation();
+        HemileiaValue movedValue = analysis.createAbstractValue(
+                new AnnotationMirrorSet(movedAnno),
+                varType.getUnderlyingType());
+        JavaExpression varExpr = new LocalVariable(varNode);
+        store.replaceValue(varExpr, movedValue);
     }
 }

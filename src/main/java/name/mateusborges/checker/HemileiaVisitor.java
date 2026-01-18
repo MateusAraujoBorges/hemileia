@@ -9,11 +9,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.sun.source.tree.AssignmentTree;
+import com.sun.source.tree.CompoundAssignmentTree;
 import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.IdentifierTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.Tree;
 import com.sun.source.tree.VariableTree;
+import com.sun.source.util.TreePath;
 
 /**
  * The visitor for the Hemileia ownership type system.
@@ -79,6 +81,12 @@ public class HemileiaVisitor extends BaseTypeVisitor<HemileiaAnnotatedTypeFactor
      * Checks if a variable has been moved and is being used.
      */
     private void checkUseAfterMove(IdentifierTree tree) {
+        // Skip if this identifier is an assignment target - reassigning a moved variable is allowed
+        if (isAssignmentTarget(tree)) {
+            logger.debug("Skipping use-after-move check for assignment target: {}", tree.getName());
+            return;
+        }
+
         Element element = atypeFactory.getAnnotatedType(tree).getUnderlyingType() != null
                 ? org.checkerframework.javacutil.TreeUtils.elementFromUse(tree)
                 : null;
@@ -111,6 +119,37 @@ public class HemileiaVisitor extends BaseTypeVisitor<HemileiaAnnotatedTypeFactor
             logger.debug("  REPORTING ERROR via hasMoved");
             checker.reportError(tree, USE_AFTER_MOVE, element.getSimpleName());
         }
+    }
+
+    /**
+     * Checks if the given tree is the target of an assignment (being written to, not read).
+     * In Rust semantics, assigning to a moved variable is allowed - it clears the moved state.
+     */
+    private boolean isAssignmentTarget(IdentifierTree tree) {
+        TreePath path = atypeFactory.getPath(tree);
+        if (path == null) {
+            return false;
+        }
+
+        TreePath parentPath = path.getParentPath();
+        if (parentPath == null) {
+            return false;
+        }
+
+        Tree parent = parentPath.getLeaf();
+
+        // Check if this identifier is the left-hand side of an assignment
+        if (parent instanceof AssignmentTree assignment) {
+            return assignment.getVariable() == tree;
+        }
+
+        // Check compound assignments (+=, -=, etc.) - these both read AND write, so not pure assignment targets
+        // For compound assignments, we still need to check use-after-move since the old value is read
+        if (parent instanceof CompoundAssignmentTree) {
+            return false;
+        }
+
+        return false;
     }
 
     /**
