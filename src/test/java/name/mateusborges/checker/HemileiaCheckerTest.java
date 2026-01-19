@@ -30,8 +30,7 @@ public class HemileiaCheckerTest extends CheckerFrameworkPerDirectoryTest {
             testFiles,
             HemileiaChecker.class,
             "hemileia",
-            "-Anomsgtext",  // Suppress additional message text for cleaner comparison
-            "-AsuppressWarnings=inconsistent.constructor.type" // Suppress constructor type warnings
+            "-Anomsgtext"  // Suppress additional message text for cleaner comparison
 //                "-Afilenames", // Print filename before typechecking it
 //                "-Aflowdotdir=dotdir", // print CFG in dot format
 //                "-Averbosecfg" // print more stuff in the cfg dot file
@@ -42,9 +41,6 @@ public class HemileiaCheckerTest extends CheckerFrameworkPerDirectoryTest {
     public static String[] getTestDirs() {
         return new String[] {
                 "basictests"
-//            "useaftermove",
-//            "borrowconflict",
-//            "validusage"
         };
     }
 }

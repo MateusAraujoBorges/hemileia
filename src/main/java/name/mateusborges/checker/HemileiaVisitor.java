@@ -1,6 +1,7 @@
 package name.mateusborges.checker;
 
 import javax.lang.model.element.Element;
+import javax.lang.model.element.ExecutableElement;
 
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.common.basetype.BaseTypeVisitor;
@@ -196,5 +197,15 @@ public class HemileiaVisitor extends BaseTypeVisitor<HemileiaAnnotatedTypeFactor
                 checker.reportError(target, BORROW_CONFLICT, sourceElement.getSimpleName());
             }
         }
+    }
+
+    /**
+     * Don't check that the constructor result is top. Checking that the super() or this() call is a
+     * subtype of the constructor result is sufficient.
+     * Goal is to prevent "warning: (inconsistent.constructor.type)." messages because @Owned is a subtype of @Borrowed.
+     */
+    @Override
+    protected void checkConstructorResult(
+            AnnotatedTypeMirror.AnnotatedExecutableType constructorType, ExecutableElement constructorElement) {
     }
 }
