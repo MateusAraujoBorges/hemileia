@@ -53,7 +53,7 @@ package java.lang;
 
     @Override
     @IntrinsicCandidate
-    StringBuilder append(int i);
+    StringBuilder append(@MutBorrowed StringBuilder this, int i);
 
     @Override
     StringBuilder append(long lng);
