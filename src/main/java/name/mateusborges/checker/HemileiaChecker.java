@@ -2,6 +2,7 @@ package name.mateusborges.checker;
 
 import org.checkerframework.common.basetype.BaseTypeChecker;
 import org.checkerframework.framework.qual.RelevantJavaTypes;
+import org.checkerframework.framework.qual.StubFiles;
 
 /**
  * The main entry point for the Hemileia type checker.
@@ -20,6 +21,7 @@ import org.checkerframework.framework.qual.RelevantJavaTypes;
  * javac -processor name.mateusborges.checker.HemileiaChecker MyFile.java
  * </pre>
  */
+@StubFiles("jdk.astub")
 @RelevantJavaTypes(Object.class)
 public class HemileiaChecker extends BaseTypeChecker {
 

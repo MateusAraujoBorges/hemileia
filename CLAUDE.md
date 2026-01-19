@@ -151,3 +151,66 @@ protected boolean supersetOf(CFAbstractStore<V, S> other) {
 Also override `hashCode()` for consistency.
 
 Reference: [NullnessStore.java](https://github.com/typetools/checker-framework/blob/master/checker/src/main/java/org/checkerframework/checker/nullness/NullnessStore.java)
+
+### Stub Files for JDK/Library Annotations
+
+Stub files (`.astub`) allow you to add type annotations to JDK classes and third-party libraries without modifying their source code. This is essential for annotating methods like `StringBuilder.toString()` with `@Borrowed` receiver types.
+
+**Location**: Stub files must be in the same directory as the checker class:
+```
+src/main/java/name/mateusborges/checker/
+├── HemileiaChecker.java
+├── jdk.astub              # Stub file for JDK classes
+└── ...
+```
+
+**Registration**: Add the `@StubFiles` annotation to the checker class:
+
+```java
+import org.checkerframework.framework.qual.StubFiles;
+
+@StubFiles("jdk.astub")
+@RelevantJavaTypes(Object.class)
+public class HemileiaChecker extends BaseTypeChecker {
+    // ...
+}
+```
+
+**Maven Configuration**: The `pom.xml` must include `.astub` files in the resources:
+
+```xml
+<resources>
+    <resource>
+        <directory>src/main/java</directory>
+        <includes>
+            <include>**/*.properties</include>
+            <include>**/*.astub</include>
+        </includes>
+    </resource>
+</resources>
+```
+
+**Explicit Receiver Parameters**: To annotate the `this` parameter of instance methods, use Java's explicit receiver parameter syntax:
+
+```java
+// In jdk.astub
+package java.lang;
+
+class StringBuilder {
+    // Annotate `this` as @Borrowed - method doesn't consume ownership
+    String toString(@Borrowed StringBuilder this) {}
+
+    // Annotate `this` as @MutBorrowed - method mutates but doesn't consume
+    StringBuilder append(@MutBorrowed StringBuilder this, String str);
+}
+```
+
+The explicit receiver parameter (`Type this`) is a Java language feature (since Java 8) that allows annotating the receiver. It doesn't change the method signature—it just provides a place to attach annotations.
+
+**Stub file format notes**:
+- Import annotations at the top of the file (before `package`)
+- Use `{}` for method bodies (or omit entirely for abstract methods)
+- Only include methods you want to annotate—others inherit defaults
+- For inherited methods, annotate them in the class where you want the annotation to apply
+
+Reference: [Checker Framework Stub Files Manual](https://checkerframework.org/manual/#stub)

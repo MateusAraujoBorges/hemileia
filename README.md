@@ -77,3 +77,33 @@ protected boolean supersetOf(CFAbstractStore<V, S> other) {
     // ... and other custom fields
 }
 ```
+
+## How do I annotate JDK/library classes?
+
+Use **stub files** (`.astub`) to add ownership annotations to classes you can't modify (JDK, third-party libraries).
+
+**Setup**:
+1. Create a stub file in the checker directory: `src/main/java/name/mateusborges/checker/jdk.astub`
+2. Register it with `@StubFiles("jdk.astub")` on `HemileiaChecker`
+3. Ensure `pom.xml` includes `**/*.astub` in resources
+
+**Annotating the receiver (`this`)**: Use Java's explicit receiver parameter syntax to annotate instance methods:
+
+```java
+// In jdk.astub
+import name.mateusborges.annotations.Borrowed;
+
+package java.lang;
+
+class StringBuilder {
+    // toString() only reads - doesn't consume ownership
+    String toString(@Borrowed StringBuilder this) {}
+}
+```
+
+The `@Borrowed StringBuilder this` parameter tells the checker that calling `toString()` on a `@Borrowed` reference is valid—the method doesn't require ownership.
+
+**When to use each annotation on receivers**:
+- `@Borrowed T this` — Method only reads (like Rust's `&self`)
+- `@MutBorrowed T this` — Method mutates but doesn't consume (like Rust's `&mut self`)
+- No annotation (default `@Owned`) — Method consumes ownership (like Rust's `self`)

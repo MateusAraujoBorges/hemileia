@@ -122,6 +122,7 @@
                 <directory>src/main/java</directory>
                 <includes>
                     <include>**/*.properties</include>
+                    <include>**/*.astub</include>
                 </includes>
             </resource>
             <resource>

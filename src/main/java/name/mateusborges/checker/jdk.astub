@@ -1,0 +1,155 @@
+import name.mateusborges.annotations.Borrowed;
+import name.mateusborges.annotations.MutBorrowed;
+import name.mateusborges.annotations.Owned;
+
+package java.lang;
+
+ final class StringBuilder
+    extends AbstractStringBuilder
+    implements Appendable, java.io.Serializable, Comparable<StringBuilder>, CharSequence
+{
+
+    @IntrinsicCandidate
+     StringBuilder();
+
+    @IntrinsicCandidate
+     StringBuilder(int capacity);
+
+    @IntrinsicCandidate
+     StringBuilder(String str);
+
+     StringBuilder(CharSequence seq);
+
+    @Override
+    int compareTo(StringBuilder another);
+
+    @Override
+    StringBuilder append(Object obj);
+
+    @Override
+    @IntrinsicCandidate
+    StringBuilder append(String str);
+
+    StringBuilder append(StringBuffer sb);
+
+    @Override
+    StringBuilder append(CharSequence s);
+
+    @Override
+    StringBuilder append(CharSequence s, int start, int end);
+
+    @Override
+    StringBuilder append(char[] str);
+
+    @Override
+    StringBuilder append(char[] str, int offset, int len);
+
+    @Override
+    StringBuilder append(boolean b);
+
+    @Override
+    @IntrinsicCandidate
+    StringBuilder append(char c);
+
+    @Override
+    @IntrinsicCandidate
+    StringBuilder append(int i);
+
+    @Override
+    StringBuilder append(long lng);
+
+    @Override
+     StringBuilder append(float f);
+
+    @Override
+     StringBuilder append(double d);
+
+    @Override
+     StringBuilder appendCodePoint(int codePoint);
+
+    @Override
+     StringBuilder delete(int start, int end);
+
+    @Override
+     StringBuilder deleteCharAt(int index);
+
+    @Override
+     StringBuilder replace(int start, int end, String str);
+
+    @Override
+     StringBuilder insert(int index, char[] str, int offset,
+                                int len);
+
+    @Override
+    StringBuilder insert(int offset, Object obj);
+
+    @Override
+    StringBuilder insert(int offset, String str);
+
+    @Override
+    StringBuilder insert(int offset, char[] str);
+
+    @Override
+    StringBuilder insert(int dstOffset, CharSequence s);
+
+    @Override
+    StringBuilder insert(int dstOffset, CharSequence s,
+                                int start, int end);
+
+    @Override
+    StringBuilder insert(int offset, boolean b);
+
+    @Override
+    StringBuilder insert(int offset, char c);
+
+    @Override
+    StringBuilder insert(int offset, int i);
+
+    @Override
+    StringBuilder insert(int offset, long l);
+
+    @Override
+    StringBuilder insert(int offset, float f);
+
+    @Override
+    StringBuilder insert(int offset, double d);
+
+    @Override
+    int indexOf(String str);
+
+    @Override
+    int indexOf(String str, int fromIndex);
+
+    @Override
+    int lastIndexOf(String str);
+
+    @Override
+    int lastIndexOf(String str, int fromIndex);
+
+    @Override
+    StringBuilder reverse();
+
+    @Override
+    StringBuilder repeat(int codePoint, int count);
+
+    @Override
+    StringBuilder repeat(CharSequence cs, int count);
+
+    @Override
+    @IntrinsicCandidate
+    String toString(@Borrowed StringBuilder this) {};
+
+    @Serial
+    private void writeObject(ObjectOutputStream s) throws IOException {}
+
+    @Serial
+    private void readObject(ObjectInputStream s)
+            throws IOException, ClassNotFoundException {}
+}
+
+abstract sealed class AbstractStringBuilder implements Appendable, CharSequence
+    permits StringBuilder, StringBuffer {
+
+    @Override
+    int length(@Borrowed AbstractStringBuilder this);
+}
