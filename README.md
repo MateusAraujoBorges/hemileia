@@ -11,25 +11,26 @@ The checker uses `@RelevantJavaTypes(Object.class)` to exclude Java primitives f
 
 Since Java primitives inherently have copy/value semantics, ownership tracking is irrelevant for them—only reference types (objects) need borrow checking.
 
-## I'm reviewing the type hierarchy in @src/main/java/name/mateusborges/checker/HemileiaQualifierHierarchy.java . Is it a problem that there's no Top type for the dataflow analysis in the checker framework? If not, why not?
+## What is the type hierarchy?
 
-● No, it's not a problem. The Checker Framework is designed to support qualifier hierarchies with multiple top types.
+The qualifier hierarchy is a linear chain based on capability inclusion:
 
-Why it works:
+```
+    @Borrowed (top - read-only capability)
+        ↑
+    @MutBorrowed (read/write capability)
+        ↑
+    @Owned (all capabilities: read/write/move)
+        ↑
+    @Moved (bottom - no capabilities)
+```
 
-1. The framework identifies tops automatically: ElementQualifierHierarchy (the parent class) identifies top qualifiers as those with no supertypes. Both @Borrowed and @MutBorrowed qualify, and the framework handles this       
-   correctly.
-2. LUB is well-defined for all pairs: Dataflow analysis needs LUB at control flow join points. The implementation handles the incomparable case (lines 100-102) by returning @Borrowed as a conservative choice. This maintains   
-   soundness—when merging a @Borrowed path with a @MutBorrowed path, you get read-only access, which is safe.
-3. GLB is well-defined for all pairs: Returns @Owned for incomparable types (line 118), which is correct since @Owned is the greatest type that is a subtype of both.
+Key relationships:
+- `@Owned <: @MutBorrowed` — owned values can be mutably borrowed
+- `@MutBorrowed <: @Borrowed` — read/write access includes read-only access
+- `@Moved` is the bottom type — moved values cannot be used
 
-The semantic reason it makes sense:
-
-Having two incomparable tops actually models Rust's borrowing rules correctly. &T and &mut T are fundamentally incompatible—you can't convert between them. A single top would imply some "super-borrow" that subsumes both, which
-doesn't exist in Rust's type system.
-
-The hierarchy forms a valid bounded lattice with @Moved as bottom and {@Borrowed, @MutBorrowed} as the set of tops. The Checker Framework's dataflow analysis only requires that LUB/GLB be computable, not that a unique top
-exists.
+This matches Rust's coercion semantics where `&mut T` can coerce to `&T`. In capability terms, a type with more capabilities (read+write) can substitute for one requiring fewer capabilities (read-only).
 
 ## Logging
 

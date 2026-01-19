@@ -18,23 +18,25 @@ import name.mateusborges.annotations.Owned;
 /**
  * The qualifier hierarchy for the Hemileia ownership type system.
  *
- * <p>The hierarchy is designed to match Rust's implicit borrowing semantics:
+ * <p>The hierarchy is a linear chain based on capability inclusion:
  * <pre>
- *  @Borrowed    @MutBorrowed (tops)
- *         \      /
- *          @Owned
- *             |
- *          @Moved (bottom)
+ *     @Borrowed (top - read-only capability)
+ *         ↑
+ *     @MutBorrowed (read/write capability)
+ *         ↑
+ *     @Owned (all capabilities: read/write/move)
+ *         ↑
+ *     @Moved (bottom - no capabilities)
  * </pre>
  *
  * <p>Key relationships:
  * <ul>
- *   <li>{@code @Owned} is a subtype of both {@code @Borrowed} and {@code @MutBorrowed} -
- *       owned values can be implicitly borrowed</li>
- *   <li>{@code @Borrowed} and {@code @MutBorrowed} are incomparable - you cannot
- *       convert between them (enforces exclusivity)</li>
+ *   <li>{@code @Owned} is a subtype of {@code @MutBorrowed} - owned values can be mutably borrowed</li>
+ *   <li>{@code @MutBorrowed} is a subtype of {@code @Borrowed} - read/write access includes read-only</li>
  *   <li>{@code @Moved} is the bottom type - moved values cannot be used</li>
  * </ul>
+ *
+ * <p>This matches Rust's coercion semantics where {@code &mut T} can coerce to {@code &T}.
  */
 public class HemileiaQualifierHierarchy extends ElementQualifierHierarchy {
 
@@ -67,16 +69,12 @@ public class HemileiaQualifierHierarchy extends ElementQualifierHierarchy {
             return true;
         }
 
-        // @Borrowed and @MutBorrowed are incomparable with each other
-        if (AnnotationUtils.areSame(subAnno, BORROWED) && AnnotationUtils.areSame(superAnno, MUT_BORROWED)) {
-            return false;
-        }
+        // @MutBorrowed <: @Borrowed (read/write includes read-only)
         if (AnnotationUtils.areSame(subAnno, MUT_BORROWED) && AnnotationUtils.areSame(superAnno, BORROWED)) {
-            return false;
+            return true;
         }
 
-        // @Owned is a subtype of both @Borrowed and @MutBorrowed
-        // This allows owned values to be implicitly borrowed
+        // @Owned <: @MutBorrowed and @Owned <: @Borrowed (owned values can be borrowed)
         if (AnnotationUtils.areSame(subAnno, OWNED)) {
             return AnnotationUtils.areSame(superAnno, BORROWED)
                     || AnnotationUtils.areSame(superAnno, MUT_BORROWED);
@@ -97,8 +95,7 @@ public class HemileiaQualifierHierarchy extends ElementQualifierHierarchy {
         if (isSubtypeQualifiers(a2, a1)) {
             return a1;
         }
-        // For incomparable types (@Borrowed and @MutBorrowed), there is no single LUB
-        // We return @Borrowed as a conservative choice (read-only access)
+        // Linear hierarchy - should not reach here, but @Borrowed is the top
         return BORROWED;
     }
 
@@ -113,8 +110,7 @@ public class HemileiaQualifierHierarchy extends ElementQualifierHierarchy {
         if (isSubtypeQualifiers(a2, a1)) {
             return a2;
         }
-        // For incomparable types (@Borrowed and @MutBorrowed), the GLB is @Owned
-        // (the greatest type that is a subtype of both)
-        return OWNED;
+        // Linear hierarchy - should not reach here, but @Moved is the bottom
+        return MOVED;
     }
 }

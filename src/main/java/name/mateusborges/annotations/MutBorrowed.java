@@ -25,6 +25,6 @@ import org.checkerframework.framework.qual.SubtypeOf;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE_USE, ElementType.TYPE_PARAMETER})
-@SubtypeOf(Owned.class)
+@SubtypeOf(Borrowed.class)
 public @interface MutBorrowed {
 }
